@@ -4,10 +4,17 @@ NewPet:
   properties:
     name: { type: string }
     tag: { type: string, nullable: true }
+    category: { $ref: "#/Category" }
 Pet:
   allOf:
     - $ref: "#/NewPet"
     - type: object
       required: [id]
       properties:
-        id: { type: integer, format: int64 }
+        id: { type: integer, format: int64, readOnly: true }
+Category:
+  type: object
+  description: Categorias formam uma árvore.
+  properties:
+    name: { type: string }
+    parent: { $ref: "#/Category" }

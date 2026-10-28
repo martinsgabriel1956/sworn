@@ -1,20 +1,22 @@
-// Etapa 1 do PLANNING.md: lista as operações e recarrega quando a spec muda.
-// O layout em 3 colunas e a página da operação chegam na etapa 2.
-import { groupOperations, type SpecState } from "@core/openapi";
-import { useEffect, useMemo, useState } from "react";
+// Layout em 3 colunas: navegação | documentação | exemplos. A operação aberta vive no hash
+// (#/op/<id>), o que dá deep link e o botão voltar do browser sem roteador.
+import { groupOperations, operationDetail, type SpecState } from "@core/openapi";
+import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { api, onSpecChange } from "./api";
+import { Nav } from "./features/nav/Nav";
+import { Examples } from "./features/operation/Examples";
+import { Intro, OperationPage } from "./features/operation/Operation";
 
-const METHOD_COLOR: Record<string, string> = {
-  get: "text-sky-700 dark:text-sky-400",
-  post: "text-emerald-700 dark:text-emerald-400",
-  put: "text-amber-700 dark:text-amber-400",
-  patch: "text-violet-700 dark:text-violet-400",
-  delete: "text-rose-700 dark:text-rose-400",
+const subscribeHash = (fn: () => void) => {
+  window.addEventListener("hashchange", fn);
+  return () => window.removeEventListener("hashchange", fn);
 };
 
 export function App() {
   const [state, setState] = useState<SpecState>();
   const [fetchError, setFetchError] = useState<string>();
+  const hash = useSyncExternalStore(subscribeHash, () => location.hash);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const load = () =>
@@ -28,67 +30,74 @@ export function App() {
     return onSpecChange(load);
   }, []);
 
-  const groups = useMemo(() => (state?.doc ? groupOperations(state.doc) : []), [state?.doc]);
   const doc = state?.doc;
+  const groups = useMemo(() => (doc ? groupOperations(doc) : []), [doc]);
+  const selectedId = hash.startsWith("#/op/") ? decodeURIComponent(hash.slice(5)) : undefined;
+  const op = useMemo(
+    () => groups.flatMap(([, ops]) => ops).find((o) => o.id === selectedId),
+    [groups, selectedId],
+  );
+  const detail = useMemo(() => (doc && op ? operationDetail(doc, op) : undefined), [doc, op]);
+
+  // Chaves no corpo: no Chromium recente scrollTo devolve uma Promise, e o React a trataria como cleanup.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: volta ao topo só quando troca de operação
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [selectedId]);
+
+  const banners = (
+    <>
+      {fetchError && <Banner>Sem conexão com o cli ({fetchError}). Ele ainda está rodando?</Banner>}
+      {state?.error && (
+        <Banner>
+          <strong className="font-semibold">Erro na spec.</strong>{" "}
+          {doc ? "Mostrando a última versão válida. " : ""}
+          Corrija o arquivo e a página atualiza sozinha.
+          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">{state.error}</pre>
+        </Banner>
+      )}
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        {fetchError && (
-          <Banner>Sem conexão com o cli ({fetchError}). Ele ainda está rodando?</Banner>
-        )}
-        {state?.error && (
-          <Banner>
-            <strong className="font-semibold">Erro na spec.</strong>{" "}
-            {doc ? "Mostrando a última versão válida. " : ""}
-            Corrija o arquivo e a página atualiza sozinha.
-            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">{state.error}</pre>
-          </Banner>
-        )}
+    <div className="grid h-screen grid-cols-[260px_minmax(0,1fr)] bg-white text-zinc-900 lg:grid-cols-[260px_minmax(0,1fr)_minmax(0,440px)] dark:bg-zinc-950 dark:text-zinc-100">
+      <Nav doc={doc} groups={groups} selectedId={selectedId} />
 
-        {doc && (
-          <header className="mb-8">
-            <h1 className="font-semibold text-2xl">{doc.info?.title ?? "API sem título"}</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {doc.info?.version && `v${doc.info.version} · `}OpenAPI {doc.openapi} · {state.source}
+      <main ref={mainRef} className="overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-8 py-8">
+          {banners}
+          {doc && !selectedId && state && <Intro doc={doc} state={state} groups={groups} />}
+          {doc && op && detail && <OperationPage doc={doc} op={op} detail={detail} />}
+          {doc && selectedId && !op && (
+            <p className="text-zinc-500">
+              A operação <code className="font-mono">{selectedId}</code> não existe nesta versão da
+              spec.{" "}
+              <a href="#/" className="underline">
+                Voltar ao início
+              </a>
             </p>
-          </header>
-        )}
-
-        {groups.map(([tag, ops]) => (
-          <section key={tag} className="mb-6">
-            <h2 className="mb-2 font-medium text-sm text-zinc-500 uppercase tracking-wide">
-              {tag}
-            </h2>
-            <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-              {ops.map((op) => (
-                <li key={`${op.method} ${op.path}`} className="flex items-baseline gap-3 px-3 py-2">
-                  <span
-                    className={`w-16 shrink-0 font-mono font-semibold text-xs uppercase ${METHOD_COLOR[op.method] ?? "text-zinc-500"}`}
-                  >
-                    {op.method}
-                  </span>
-                  <code
-                    className={`font-mono text-sm ${op.deprecated ? "line-through opacity-60" : ""}`}
-                  >
-                    {op.path}
-                  </code>
-                  {op.summary && (
-                    <span className="truncate text-sm text-zinc-500">{op.summary}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-
-        {doc && groups.length === 0 && <p className="text-zinc-500">A spec não tem operações.</p>}
+          )}
+          {/* Em telas estreitas os exemplos descem para baixo da documentação. */}
+          {doc && op && detail && (
+            <div className="mt-10 lg:hidden">
+              <Examples doc={doc} op={op} detail={detail} />
+            </div>
+          )}
+        </div>
       </main>
+
+      <aside className="hidden overflow-y-auto border-zinc-200 border-l bg-zinc-50 lg:block dark:border-zinc-800 dark:bg-zinc-900">
+        {doc && op && detail && (
+          <div className="px-6 py-8">
+            <Examples doc={doc} op={op} detail={detail} />
+          </div>
+        )}
+      </aside>
     </div>
   );
 }
 
-function Banner({ children }: { children: React.ReactNode }) {
+function Banner({ children }: { children: ReactNode }) {
   return (
     <div className="mb-6 rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-rose-900 text-sm dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
       {children}

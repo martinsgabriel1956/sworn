@@ -2,10 +2,20 @@ openapi: 3.0.3
 info:
   title: Petstore
   version: 1.0.0
+  description: |
+    API de exemplo usada no desenvolvimento do **Sworn**.
+
+    - Pets com categoria recursiva (`parent`)
+    - Donos que podem ser pessoa ou empresa (`oneOf` com discriminator)
 servers:
-  - url: http://localhost:3000
+  - url: "{scheme}://localhost:{port}"
+    description: Local
+    variables:
+      scheme: { default: http, enum: [http, https] }
+      port: { default: "3000" }
 tags:
   - name: pets
+  - name: owners
   - name: store
 paths:
   /pets:
@@ -13,10 +23,18 @@ paths:
       operationId: listPets
       tags: [pets]
       summary: Lista os pets
+      description: Lista paginada. Use `limit` para controlar o tamanho da página.
       parameters:
         - name: limit
           in: query
-          schema: { type: integer, minimum: 1, maximum: 100 }
+          description: Quantos pets devolver.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: status
+          in: query
+          schema: { type: string, enum: [disponivel, reservado, vendido] }
+        - name: X-Request-Id
+          in: header
+          schema: { type: string, format: uuid }
       responses:
         "200":
           description: Lista de pets
@@ -25,6 +43,18 @@ paths:
               schema:
                 type: array
                 items: { $ref: "./components/pet.yaml#/Pet" }
+              example:
+                - { id: 1, name: Rex, tag: cachorro, category: { name: Cães } }
+                - { id: 2, name: Mimi, tag: null }
+        "400":
+          description: Parâmetro inválido
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                limite:
+                  summary: limit fora da faixa
+                  value: { code: 400, message: "limit deve estar entre 1 e 100" }
     post:
       operationId: createPet
       tags: [pets]
@@ -33,6 +63,9 @@ paths:
         required: true
         content:
           application/json:
+            schema: { $ref: "./components/pet.yaml#/NewPet" }
+            example: { name: Rex, tag: cachorro }
+          application/x-www-form-urlencoded:
             schema: { $ref: "./components/pet.yaml#/NewPet" }
       responses:
         "201":
@@ -65,6 +98,27 @@ paths:
       responses:
         "204":
           description: Removido
+  /owners/{ownerId}:
+    get:
+      operationId: getOwner
+      tags: [owners]
+      summary: Busca o dono de um pet
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: O dono
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Owner" }
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /store/inventory:
     get:
       tags: [store]
@@ -82,3 +136,36 @@ paths:
       responses:
         "200":
           description: OK
+components:
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+    Owner:
+      oneOf:
+        - $ref: "#/components/schemas/Person"
+        - $ref: "#/components/schemas/Company"
+      discriminator:
+        propertyName: kind
+        mapping:
+          pessoa: "#/components/schemas/Person"
+          empresa: "#/components/schemas/Company"
+    Person:
+      type: object
+      required: [kind, name]
+      properties:
+        kind: { type: string, enum: [pessoa] }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email }
+    Company:
+      type: object
+      required: [kind, cnpj]
+      properties:
+        kind: { type: string, enum: [empresa] }
+        cnpj: { type: string, pattern: "^\\d{14}$" }
+        contacts:
+          type: array
+          items: { $ref: "#/components/schemas/Person" }
