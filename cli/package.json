@@ -1,0 +1,33 @@
+{
+  "name": "sworn",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "sworn": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "node scripts/build.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^16.0.5",
+    "@fastify/static": "^10.1.8",
+    "fastify": "^5.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "sworn-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "cli",
+    "web"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "npm run build -w web && npm run build -w cli",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "npm test -w cli",
+    "typecheck": "npm run typecheck -w cli && npm run typecheck -w web"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15"
+  }
+}

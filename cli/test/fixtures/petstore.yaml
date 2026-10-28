@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: Petstore
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: pets
+  - name: store
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      summary: Lista os pets
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Lista de pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "./components/pet.yaml#/Pet" }
+    post:
+      operationId: createPet
+      tags: [pets]
+      summary: Cadastra um pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./components/pet.yaml#/NewPet" }
+      responses:
+        "201":
+          description: Pet criado
+          content:
+            application/json:
+              schema: { $ref: "./components/pet.yaml#/Pet" }
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getPet
+      tags: [pets]
+      summary: Busca um pet
+      responses:
+        "200":
+          description: O pet
+          content:
+            application/json:
+              schema: { $ref: "./components/pet.yaml#/Pet" }
+        "404":
+          description: Não encontrado
+    delete:
+      operationId: deletePet
+      tags: [pets]
+      deprecated: true
+      responses:
+        "204":
+          description: Removido
+  /store/inventory:
+    get:
+      tags: [store]
+      summary: Estoque por status
+      responses:
+        "200":
+          description: Contagem por status
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
