@@ -12,6 +12,13 @@
   ],
   "license": "MIT",
   "author": "Gabriel Martins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinsgabriel1956/sworn.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/martinsgabriel1956/sworn#readme",
+  "bugs": "https://github.com/martinsgabriel1956/sworn/issues",
   "type": "module",
   "bin": {
     "sworn": "dist/main.js"
