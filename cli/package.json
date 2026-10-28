@@ -1,6 +1,6 @@
 {
   "name": "@sworn/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Documentação OpenAPI local que confere cada resposta real contra a spec.",
   "keywords": [
     "openapi",
