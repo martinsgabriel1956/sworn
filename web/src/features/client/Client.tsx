@@ -8,12 +8,14 @@ import {
   initialDraft,
   needsAuth,
   paramKey,
+  type SendRequest,
   type SendResponse,
 } from "@core/request";
 import { type Schema, typeLabel } from "@core/schema";
+import { SNIPPET_LANGS, type SnippetLang, snippet } from "@core/snippets";
 import { type Issue, validatorFor } from "@core/validate";
 import { type KeyboardEvent, useMemo, useState } from "react";
-import { activeVars, type Result, useClient } from "../../store";
+import { activeVars, publicVars, type Result, useClient } from "../../store";
 import { Button, inputClass, Method, statusColor, Tabs } from "../../ui";
 import { EnvBar } from "../env/EnvBar";
 import { ResponseExamples } from "../operation/Examples";
@@ -58,6 +60,19 @@ export function Client({
     baseUrl: vars.baseUrl ?? detail.server,
   });
   const missingVars = unresolved(request);
+  // Snippets saem do mesmo formulário, mas com os segredos como {{nome}}: código copiado vai parar
+  // em chat, ticket e terminal compartilhado.
+  const pub = publicVars(ws);
+  const snippetRequest = buildRequest({
+    method: op.method,
+    path: op.path,
+    detail,
+    draft,
+    vars: pub,
+    auth,
+    baseUrl: vars.baseUrl ?? detail.server,
+  });
+  const hidesSecrets = Object.keys(pub).length < Object.keys(vars).length;
   const missingParams = detail.parameters.filter(
     (p) => p.required && !(draft.params[paramKey(p)] ?? "").trim(),
   );
@@ -178,6 +193,8 @@ export function Client({
         </div>
       )}
 
+      <Snippets request={snippetRequest} hidesSecrets={hidesSecrets} />
+
       <div>
         <h3 className="mb-2 font-semibold">Resposta</h3>
         {sending ? (
@@ -187,7 +204,7 @@ export function Client({
         ) : (
           <>
             <p className="mb-2 text-xs text-zinc-500">
-              Ainda não enviada. Abaixo, o exemplo que a spec declara.
+              Ainda não enviada. Abaixo, o exemplo da resposta.
             </p>
             <ResponseExamples doc={doc} detail={detail} />
           </>
@@ -396,5 +413,39 @@ function Conformance({ issues }: { issues: Issue[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+function Snippets({ request, hidesSecrets }: { request: SendRequest; hidesSecrets: boolean }) {
+  const [lang, setLang] = useState<SnippetLang>("curl");
+  const [copied, setCopied] = useState(false);
+  const code = snippet(request, lang);
+  const copy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <details>
+      <summary className="cursor-pointer font-semibold">Código</summary>
+      <div className="mt-2 flex items-center gap-2">
+        <Tabs
+          items={SNIPPET_LANGS.map((l) => ({ key: l, label: l === "python" ? "Python" : l }))}
+          active={lang}
+          onChange={(l) => setLang(l as SnippetLang)}
+        />
+        <Button variant="ghost" className="ml-auto" onClick={copy}>
+          {copied ? "Copiado" : "Copiar"}
+        </Button>
+      </div>
+      {hidesSecrets && (
+        <p className="mt-2 text-xs text-zinc-500">
+          Os segredos do ambiente ficam como {"{{nome}}"}.
+        </p>
+      )}
+      <pre className="mt-2 overflow-x-auto rounded-md border border-zinc-200 bg-white p-3 font-mono text-xs leading-relaxed dark:border-zinc-800 dark:bg-zinc-950">
+        {code}
+      </pre>
+    </details>
   );
 }

@@ -85,3 +85,10 @@ export const useClient = create<State>()((set, get) => ({
 /** Variáveis do ambiente ativo, com os segredos por cima. */
 export const activeVars = (ws?: Workspace): Vars =>
   ws?.active ? { ...ws.envs[ws.active], ...ws.secrets[ws.active] } : {};
+
+/** Como activeVars, mas sem os segredos: eles ficam como {{nome}} (snippets que vão para fora). */
+export const publicVars = (ws?: Workspace): Vars => {
+  const vars = activeVars(ws);
+  for (const name of Object.keys((ws?.active && ws.secrets[ws.active]) || {})) delete vars[name];
+  return vars;
+};

@@ -4,6 +4,7 @@ import type { OpenApiDoc, Operation } from "@core/openapi";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef } from "react";
 import { Method } from "../../ui";
+import { Search } from "../search/Search";
 
 type Row = { kind: "tag"; tag: string } | { kind: "op"; op: Operation };
 
@@ -26,6 +27,7 @@ export function Nav({
       ]),
     [groups],
   );
+  const ops = useMemo(() => groups.flatMap(([, list]) => list), [groups]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -48,6 +50,7 @@ export function Nav({
         </span>
         {doc?.info?.version && <span className="text-xs text-zinc-500">v{doc.info.version}</span>}
       </a>
+      <Search doc={doc} ops={ops} />
 
       <nav ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto py-2" aria-label="Operações">
         <ul className="relative" style={{ height: virtualizer.getTotalSize() }}>

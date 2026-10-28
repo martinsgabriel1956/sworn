@@ -1,7 +1,7 @@
 // Formulário do cliente → request enviada ao proxy. Puro: o web/ chama antes do POST /__sworn/send.
+import { bodyExample } from "./examples.js";
 import { interpolate, type Vars } from "./interpolate.js";
-import type { SecurityScheme } from "./openapi.js";
-import { mediaExample, type OpenApiDoc, type OperationDetail, type Parameter } from "./openapi.js";
+import type { OpenApiDoc, OperationDetail, Parameter, SecurityScheme } from "./openapi.js";
 import { resolve } from "./refs.js";
 
 export type Auth =
@@ -59,10 +59,10 @@ export type HistoryEntry = {
 
 export const paramKey = (p: Pick<Parameter, "in" | "name">) => `${p.in}:${p.name}`;
 
-/** Rascunho inicial: parâmetros vazios e o body de exemplo da spec, se houver. */
+/** Rascunho inicial: parâmetros vazios e o body de exemplo (o da spec ou um gerado do schema). */
 export function initialDraft(doc: OpenApiDoc, detail: OperationDetail): Draft {
   const [contentType, media] = Object.entries(detail.requestBody?.content ?? {})[0] ?? [];
-  const example = media ? mediaExample(doc, media) : undefined;
+  const example = media ? bodyExample(doc, contentType, media, "request") : undefined;
   const body =
     example === undefined
       ? ""
