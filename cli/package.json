@@ -1,7 +1,6 @@
 {
-  "name": "sworn",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@sworn/cli",
+  "version": "0.1.0",
   "description": "Documentação OpenAPI local que confere cada resposta real contra a spec.",
   "keywords": [
     "openapi",
@@ -11,6 +10,8 @@
     "contract",
     "validation"
   ],
+  "license": "MIT",
+  "author": "Gabriel Martins",
   "type": "module",
   "bin": {
     "sworn": "dist/main.js"
@@ -40,5 +41,8 @@
     "typescript": "^7.0.2",
     "undici": "^8.12.3",
     "vitest": "^5.0.4"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

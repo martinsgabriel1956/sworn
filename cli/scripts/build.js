@@ -11,7 +11,7 @@ await build({
   entryPoints: [new URL("../src/main.ts", import.meta.url).pathname],
   outfile: `${dist}main.js`,
   // Tudo num arquivo só, dependências inclusas: o pacote publicado não tem dependências, e o
-  // `npx sworn` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s).
+  // `npx @sworn/cli` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s).
   bundle: true,
   minify: true,
   platform: "node",
@@ -23,5 +23,7 @@ await build({
   },
 });
 cpSync(web, `${dist}web`, { recursive: true });
-// O npm publica o README da pasta do pacote; a fonte é o da raiz do repositório.
-cpSync(new URL("../../README.md", import.meta.url), new URL("../README.md", import.meta.url));
+// O npm publica o README e o LICENSE da pasta do pacote; a fonte é a raiz do repositório.
+for (const file of ["README.md", "LICENSE"]) {
+  cpSync(new URL(`../../${file}`, import.meta.url), new URL(`../${file}`, import.meta.url));
+}

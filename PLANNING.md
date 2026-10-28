@@ -6,9 +6,9 @@ Princípio: **local-first, zero config, nenhum byte passa por servidor de tercei
 É um **CLI** que sobe um servidor local e abre a doc no browser:
 
 ```
-npx sworn                      # procura openapi.{yaml,yml,json} na pasta atual
-npx sworn api/openapi.yaml
-npx sworn https://exemplo.com/openapi.json --port 4000
+npx @sworn/cli                      # procura openapi.{yaml,yml,json} na pasta atual
+npx @sworn/cli api/openapi.yaml
+npx @sworn/cli https://exemplo.com/openapi.json --port 4000
 ```
 
 Dois pacotes em npm workspaces, publicados como **um** pacote npm:
@@ -49,7 +49,7 @@ Mesma base do Patchbay (`../http-client`), para aproveitar costume e código.
 | Estado         | **Zustand**                                                         | Operação aberta, ambiente ativo, request em edição                                                                                                          |
 | Editor de body | **CodeMirror 6** (só `lang-json` e `lint`, sem o `basicSetup`)      | Realce e erro de sintaxe. A validação contra o schema usa o mesmo Ajv da resposta (etapa 4): o `codemirror-json-schema` traz shiki e markdown-it, vários MB |
 | Listas longas  | **`@tanstack/react-virtual`**                                       | Navegação com milhares de operações                                                                                                                         |
-| Publicação     | **esbuild** com as dependências dentro do `dist/main.js`            | Pacote sem dependências: o `npx sworn` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s)                                                     |
+| Publicação     | **esbuild** com as dependências dentro do `dist/main.js`            | Pacote sem dependências: o `npx @sworn/cli` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s)                                                |
 | Lint/format    | **Biome**                                                           | Igual ao Patchbay                                                                                                                                           |
 | Testes         | **Vitest**                                                          | Idem                                                                                                                                                        |
 
@@ -212,5 +212,5 @@ Cada etapa termina com algo usável:
 
 ## 10. Decisões em aberto
 
-- **Nome no npm**: `sworn` está ocupado. As opções são `swornapi` (livre) ou `@sworn/cli` (exige criar a org no npm). O comando continua `sworn` nos dois casos.
+- ~~**Nome no npm**~~: decidido, `@sworn/cli` com licença MIT (`sworn` é de outra pessoa). O comando instalado continua `sworn`; sem instalar, `npx @sworn/cli`.
 - **Código compartilhado com o Patchbay**: o executor HTTP é praticamente o mesmo. Na V1 é cópia. Extrair um pacote comum só se os dois começarem a divergir com bugs repetidos.

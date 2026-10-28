@@ -10,7 +10,7 @@ Legenda: 🟢 copiado do que funciona nos concorrentes · 🔧 ataca um ponto fr
 
 ## V1 — MVP
 
-Formato: CLI (`npx sworn openapi.yaml`) que sobe um servidor local com a UI e um proxy próprio.
+Formato: CLI (`npx @sworn/cli openapi.yaml`) que sobe um servidor local com a UI e um proxy próprio.
 
 | #   | Funcionalidade                                                                                                                                      | Tipo            |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
@@ -32,7 +32,7 @@ Formato: CLI (`npx sworn openapi.yaml`) que sobe um servidor local com a UI e um
 **Fora da V1 de propósito:** OAuth2, Swagger 2.0, build estático, middlewares de framework, plugins, sincronização de time. Cada um atrasa o lançamento sem ajudar a provar a tese.
 
 **A V1 está pronta quando:**
-- `npx sworn` numa pasta com `openapi.yaml` abre a doc sem nenhuma configuração.
+- `npx @sworn/cli` numa pasta com `openapi.yaml` abre a doc sem nenhuma configuração.
 - Uma spec com 2 mil operações abre em menos de 1s.
 - Uma resposta que viola o schema aparece destacada no primeiro uso, sem o usuário ter ligado nada.
 - O autor usa o Sworn no lugar do Swagger UI nos próprios projetos.

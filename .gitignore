@@ -2,5 +2,6 @@ node_modules
 dist
 # .sworn/ que o npm run dev cria ao lado da fixture
 cli/test/fixtures/.sworn
-# cópia do README da raiz, gerada pelo build do cli
+# cópias do README e do LICENSE da raiz, geradas pelo build do cli
 cli/README.md
+cli/LICENSE

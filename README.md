@@ -5,9 +5,16 @@ Documentação OpenAPI que roda local e **confere cada resposta real contra a sp
 Você abre a doc, envia uma request, e o Sworn diz se a API cumpriu o que a spec promete: tipo errado, campo obrigatório faltando, campo que não está documentado, status ou Content-Type fora da spec. Cada problema aparece marcado no lugar exato do body.
 
 ```bash
-npx sworn                       # procura openapi.yaml, openapi.yml ou openapi.json na pasta atual
-npx sworn api/openapi.yaml
-npx sworn http://localhost:3000/openapi.json
+npx @sworn/cli                       # procura openapi.yaml, openapi.yml ou openapi.json na pasta atual
+npx @sworn/cli api/openapi.yaml
+npx @sworn/cli http://localhost:3000/openapi.json
+```
+
+Ou instalado, para usar o comando `sworn` direto:
+
+```bash
+npm install -g @sworn/cli
+sworn api/openapi.yaml
 ```
 
 Requer Node 22 ou mais novo. Aceita OpenAPI 3.0 e 3.1.
