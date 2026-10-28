@@ -1,2 +1,4 @@
 node_modules
 dist
+# .sworn/ que o npm run dev cria ao lado da fixture
+cli/test/fixtures/.sworn

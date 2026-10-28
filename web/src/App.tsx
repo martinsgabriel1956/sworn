@@ -1,21 +1,31 @@
-// Layout em 3 colunas: navegação | documentação | exemplos. A operação aberta vive no hash
+// Layout em 3 colunas: navegação | documentação | cliente. A operação aberta vive no hash
 // (#/op/<id>), o que dá deep link e o botão voltar do browser sem roteador.
 import { groupOperations, operationDetail, type SpecState } from "@core/openapi";
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { api, onSpecChange } from "./api";
+import { Client } from "./features/client/Client";
 import { Nav } from "./features/nav/Nav";
-import { Examples } from "./features/operation/Examples";
 import { Intro, OperationPage } from "./features/operation/Operation";
+import { useClient } from "./store";
 
 const subscribeHash = (fn: () => void) => {
   window.addEventListener("hashchange", fn);
   return () => window.removeEventListener("hashchange", fn);
 };
 
+// Mesmo breakpoint do lg: do Tailwind. Decide onde o cliente fica, para montar um só.
+const wide = matchMedia("(min-width: 1024px)");
+const subscribeWide = (fn: () => void) => {
+  wide.addEventListener("change", fn);
+  return () => wide.removeEventListener("change", fn);
+};
+
 export function App() {
   const [state, setState] = useState<SpecState>();
   const [fetchError, setFetchError] = useState<string>();
   const hash = useSyncExternalStore(subscribeHash, () => location.hash);
+  const isWide = useSyncExternalStore(subscribeWide, () => wide.matches);
+  const loadClient = useClient((s) => s.load);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -27,8 +37,9 @@ export function App() {
         })
         .catch((err: Error) => setFetchError(err.message));
     load();
+    loadClient().catch((err: Error) => setFetchError(err.message));
     return onSpecChange(load);
-  }, []);
+  }, [loadClient]);
 
   const doc = state?.doc;
   const groups = useMemo(() => (doc ? groupOperations(doc) : []), [doc]);
@@ -60,7 +71,7 @@ export function App() {
   );
 
   return (
-    <div className="grid h-screen grid-cols-[260px_minmax(0,1fr)] bg-white text-zinc-900 lg:grid-cols-[260px_minmax(0,1fr)_minmax(0,440px)] dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="grid h-screen grid-cols-[260px_minmax(0,1fr)] bg-white text-zinc-900 lg:grid-cols-[260px_minmax(0,1fr)_minmax(0,480px)] dark:bg-zinc-950 dark:text-zinc-100">
       <Nav doc={doc} groups={groups} selectedId={selectedId} />
 
       <main ref={mainRef} className="overflow-y-auto">
@@ -77,19 +88,19 @@ export function App() {
               </a>
             </p>
           )}
-          {/* Em telas estreitas os exemplos descem para baixo da documentação. */}
-          {doc && op && detail && (
-            <div className="mt-10 lg:hidden">
-              <Examples doc={doc} op={op} detail={detail} />
+          {/* Em telas estreitas o cliente desce para baixo da documentação. */}
+          {doc && op && detail && !isWide && (
+            <div className="mt-10">
+              <Client key={op.id} doc={doc} op={op} detail={detail} />
             </div>
           )}
         </div>
       </main>
 
       <aside className="hidden overflow-y-auto border-zinc-200 border-l bg-zinc-50 lg:block dark:border-zinc-800 dark:bg-zinc-900">
-        {doc && op && detail && (
-          <div className="px-6 py-8">
-            <Examples doc={doc} op={op} detail={detail} />
+        {doc && op && detail && isWide && (
+          <div className="px-6 py-6">
+            <Client key={op.id} doc={doc} op={op} detail={detail} />
           </div>
         )}
       </aside>

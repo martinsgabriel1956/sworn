@@ -1,10 +1,12 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { buildServer } from "./server.js";
 import { loadSpec } from "./spec.js";
+import { createStore } from "./store.js";
 
 const HELP = `Uso: sworn [spec] [opções]
 
@@ -42,7 +44,9 @@ const state = await spec.reload();
 const token = process.env.SWORN_TOKEN ?? randomBytes(32).toString("base64url");
 // Após o build, o web/ fica em dist/web, ao lado deste arquivo. Em dev a pasta não existe e o Vite serve a página.
 const webDir = fileURLToPath(new URL("./web/", import.meta.url));
-const app = await buildServer({ spec, token, webDir });
+// .sworn/ fica ao lado da spec; com spec por URL, na pasta atual.
+const store = createStore(join(/^https?:\/\//i.test(input) ? "." : dirname(input), ".sworn"));
+const app = await buildServer({ spec, store, token, webDir });
 
 const explicitPort = values.port ?? process.env.PORT;
 let url: string;

@@ -14,6 +14,15 @@ export type OpenApiDoc = {
   servers?: Server[];
   tags?: { name: string; description?: string }[];
   paths?: Record<string, Record<string, unknown> | undefined>;
+  components?: { securitySchemes?: Record<string, SecurityScheme | Ref> };
+  security?: Record<string, string[]>[];
+};
+
+export type SecurityScheme = {
+  type: string;
+  scheme?: string;
+  in?: "header" | "query" | "cookie";
+  name?: string;
 };
 
 export type Parameter = {
@@ -23,6 +32,7 @@ export type Parameter = {
   description?: string;
   deprecated?: boolean;
   schema?: Schema | Ref;
+  example?: unknown;
 };
 
 export type MediaType = {
@@ -48,6 +58,8 @@ type OperationObject = {
   requestBody?: RequestBody | Ref;
   responses?: Record<string, Response | Ref>;
   servers?: Server[];
+  /** `[]` declara a operação pública: não leva auth. */
+  security?: Record<string, string[]>[];
 };
 
 /** A operação com os $ref de parâmetros, body e respostas resolvidos. */

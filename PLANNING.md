@@ -36,25 +36,26 @@ O servidor local resolve os três sem mandar tráfego para terceiros, que é o p
 
 Mesma base do Patchbay (`../http-client`), para aproveitar costume e código.
 
-| Camada         | Escolha                                                                                     | Por quê                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Monorepo       | **npm workspaces** (`cli`, `web`)                                                           | Um `npm install` e um `npm run dev` na raiz                                                        |
-| Servidor       | **Node 22 + TypeScript + Fastify** + `@fastify/static`                                      | Igual ao Patchbay                                                                                  |
-| Execução HTTP  | **`undici`**                                                                                | Headers crus, redirect manual, sem descompressão automática. Dá para copiar o executor do Patchbay |
-| Spec           | **`@apidevtools/json-schema-ref-parser`** (só `bundle`, já lê YAML)                         | Junta `$ref` externos num documento só, **sem** desreferenciar tudo (ver seção 4)                  |
-| Validação      | **Ajv** (`ajv/dist/2020`) + `@openapi-contrib/openapi-schema-to-json-schema` para specs 3.0 | Padrão de mercado. A conversão trata `nullable`, `exclusiveMinimum` booleano etc.                  |
-| Live reload    | **`fs.watch`** + **SSE**                                                                    | Nativos do Node; sem chokidar nem WebSocket                                                        |
-| Web            | **React + Vite + TypeScript**                                                               | SPA, sem SSR                                                                                       |
-| UI             | **Tailwind + shadcn/ui** (o `Command` do shadcn faz o Cmd+K)                                | Igual aos outros projetos                                                                          |
-| Estado         | **Zustand**                                                                                 | Operação aberta, ambiente ativo, request em edição                                                 |
-| Editor de body | **CodeMirror 6** + `codemirror-json-schema`                                                 | Validação e autocomplete a partir do schema da operação                                            |
-| Listas longas  | **`@tanstack/react-virtual`**                                                               | Navegação com milhares de operações                                                                |
-| Lint/format    | **Biome**                                                                                   | Igual ao Patchbay                                                                                  |
-| Testes         | **Vitest**                                                                                  | Idem                                                                                               |
+| Camada         | Escolha                                                             | Por quê                                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Monorepo       | **npm workspaces** (`cli`, `web`)                                   | Um `npm install` e um `npm run dev` na raiz                                                                                                                 |
+| Servidor       | **Node 22 + TypeScript + Fastify** + `@fastify/static`              | Igual ao Patchbay                                                                                                                                           |
+| Execução HTTP  | **`undici`**                                                        | Headers crus, redirect manual, sem descompressão automática. Dá para copiar o executor do Patchbay                                                          |
+| Spec           | **`@apidevtools/json-schema-ref-parser`** (só `bundle`, já lê YAML) | Junta `$ref` externos num documento só, **sem** desreferenciar tudo (ver seção 4)                                                                           |
+| Validação      | **Ajv** (`ajv/dist/2020`) + conversor 3.0 → JSON Schema próprio     | Padrão de mercado. A conversão (`nullable`, `exclusiveMinimum` booleano) é pequena; a lib pronta traz yargs, lodash e openapi-typescript                    |
+| Live reload    | **`fs.watch`** + **SSE**                                            | Nativos do Node; sem chokidar nem WebSocket                                                                                                                 |
+| Web            | **React + Vite + TypeScript**                                       | SPA, sem SSR                                                                                                                                                |
+| UI             | **Tailwind + shadcn/ui** (o `Command` do shadcn faz o Cmd+K)        | Igual aos outros projetos                                                                                                                                   |
+| Estado         | **Zustand**                                                         | Operação aberta, ambiente ativo, request em edição                                                                                                          |
+| Editor de body | **CodeMirror 6** (só `lang-json` e `lint`, sem o `basicSetup`)      | Realce e erro de sintaxe. A validação contra o schema usa o mesmo Ajv da resposta (etapa 4): o `codemirror-json-schema` traz shiki e markdown-it, vários MB |
+| Listas longas  | **`@tanstack/react-virtual`**                                       | Navegação com milhares de operações                                                                                                                         |
+| Lint/format    | **Biome**                                                           | Igual ao Patchbay                                                                                                                                           |
+| Testes         | **Vitest**                                                          | Idem                                                                                                                                                        |
 
 **Escrito à mão em vez de lib:**
 - **Gerador de exemplos** (~100 linhas): determinístico, para os snippets não mudarem a cada render. O `json-schema-faker` é pesado e aleatório.
 - **Snippets** (curl, fetch, Python): três templates. Adotar `httpsnippet-lite` na V2, quando entrarem mais linguagens.
+- **Executor HTTP** (`cli/src/proxy.ts`): o do Patchbay reduzido (redirect sem vazar credencial, descompressão, limite de 5 MB, timeout de 30s), sem cookie jar, proxy e certificados.
 
 Sem banco, sem conta, sem Tauri: é um processo que vive enquanto o terminal está aberto.
 
@@ -112,14 +113,14 @@ sworn/
 
 Todas sob `/__sworn/`, para não colidir com nada.
 
-| Rota                        | O que faz                                                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `GET /`                     | Serve a UI (`dist/web`) com o token de sessão embutido no HTML                                                   |
-| `GET /__sworn/spec`         | Spec com os refs externos já juntados, mais metadados (caminho, versão OpenAPI, erro de parse)                   |
-| `GET /__sworn/events`       | SSE: `spec-changed`, `spec-error`                                                                                |
-| `POST /__sworn/send`        | Recebe `{method, url, headers, body}` já interpolados, executa e devolve `{status, headers, body, timing, size}` |
-| `GET/PUT /__sworn/env`      | Lê e grava ambientes e segredos                                                                                  |
-| `GET/POST /__sworn/history` | Lista e grava o histórico                                                                                        |
+| Rota                         | O que faz                                                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET /`                      | Serve a UI (`dist/web`) com o token de sessão embutido no HTML                                                   |
+| `GET /__sworn/spec`          | Spec com os refs externos já juntados, mais metadados (caminho, versão OpenAPI, erro de parse)                   |
+| `GET /__sworn/events`        | SSE: `spec-changed`, `spec-error`                                                                                |
+| `POST /__sworn/send`         | Recebe `{method, url, headers, body}` já interpolados, executa e devolve `{status, headers, body, timing, size}` |
+| `GET/PUT /__sworn/workspace` | Lê e grava ambientes, segredos, ambiente ativo e auth global                                                     |
+| `GET/POST /__sworn/history`  | Lista e grava o histórico                                                                                        |
 
 ### Segurança do proxy (fronteira de confiança)
 
@@ -162,7 +163,7 @@ A `Issue` já é o formato que o relatório de drift da V2 vai acumular: na V2 b
 
 ## 7. Arquivos do usuário: `.sworn/`
 
-Criada na pasta da spec no primeiro uso:
+Fica na pasta da spec (com spec por URL, na pasta atual). Nada é criado só por abrir a doc: as pastas aparecem no primeiro save de ambiente, auth ou histórico.
 
 ```
 .sworn/
@@ -172,12 +173,13 @@ Criada na pasta da spec no primeiro uso:
     staging.json
   local/              # nunca vai para o git
     secrets.json      # { "dev": { "token": "..." } }
-    auth.json         # auth global ativa
+    state.json        # ambiente ativo e auth global
     history.jsonl     # uma request por linha; mantém as últimas 500
 ```
 
 - Variáveis no formato `{{nome}}`. Um segredo sobrescreve a variável de mesmo nome do ambiente.
-- Sem `.sworn/env/`, o Sworn cria `default.json` a partir do primeiro `servers[].url` da spec. Por isso funciona sem configuração.
+- A URL base é a variável `baseUrl` do ambiente ativo; sem ela, o primeiro `servers[].url` da spec. Por isso funciona sem configuração e sem criar arquivo.
+- Operação com `security: []` na spec é pública: vai sem a auth global.
 - A interpolação acontece no `web/` (`core/interpolate.ts`) antes do `send`. O histórico guarda a request **antes** da interpolação, para nunca gravar segredo em claro.
 
 ---

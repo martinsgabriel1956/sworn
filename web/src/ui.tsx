@@ -1,5 +1,5 @@
 // Peças pequenas usadas em mais de uma feature.
-import type { ReactNode } from "react";
+import { type ButtonHTMLAttributes, type ReactNode, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -94,5 +94,70 @@ export function Tabs({
         </button>
       ))}
     </div>
+  );
+}
+
+export const inputClass =
+  "min-w-0 rounded border border-zinc-300 bg-white px-2 py-1 font-mono text-xs placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950";
+
+const BUTTON = {
+  primary:
+    "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300",
+  secondary: "border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800",
+  ghost: "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
+};
+
+export function Button({
+  variant = "secondary",
+  className = "",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: keyof typeof BUTTON }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={`rounded px-2.5 py-1 text-xs disabled:opacity-50 ${BUTTON[variant]} ${className}`}
+    />
+  );
+}
+
+/** <dialog> nativo: Esc, foco preso e backdrop vêm do browser. */
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (open && !dialog?.open) dialog?.showModal();
+    if (!open && dialog?.open) dialog.close();
+  }, [open]);
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      className="m-auto w-[min(640px,calc(100vw-2rem))] rounded-lg border border-zinc-200 bg-white p-0 text-zinc-900 backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+    >
+      {open && (
+        <div className="flex max-h-[80vh] flex-col">
+          <h2 className="border-zinc-200 border-b px-5 py-3 font-semibold dark:border-zinc-800">
+            {title}
+          </h2>
+          <div className="overflow-y-auto px-5 py-4 text-sm">{children}</div>
+          <div className="flex justify-end gap-2 border-zinc-200 border-t px-5 py-3 dark:border-zinc-800">
+            {footer}
+          </div>
+        </div>
+      )}
+    </dialog>
   );
 }
