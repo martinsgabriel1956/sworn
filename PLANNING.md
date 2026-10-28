@@ -49,6 +49,7 @@ Mesma base do Patchbay (`../http-client`), para aproveitar costume e código.
 | Estado         | **Zustand**                                                         | Operação aberta, ambiente ativo, request em edição                                                                                                          |
 | Editor de body | **CodeMirror 6** (só `lang-json` e `lint`, sem o `basicSetup`)      | Realce e erro de sintaxe. A validação contra o schema usa o mesmo Ajv da resposta (etapa 4): o `codemirror-json-schema` traz shiki e markdown-it, vários MB |
 | Listas longas  | **`@tanstack/react-virtual`**                                       | Navegação com milhares de operações                                                                                                                         |
+| Publicação     | **esbuild** com as dependências dentro do `dist/main.js`            | Pacote sem dependências: o `npx sworn` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s)                                                     |
 | Lint/format    | **Biome**                                                           | Igual ao Patchbay                                                                                                                                           |
 | Testes         | **Vitest**                                                          | Idem                                                                                                                                                        |
 

@@ -168,3 +168,15 @@ describe("busca", () => {
     expect(search(index, "")).toHaveLength(3);
   });
 });
+
+describe("exemplo de spec grande", () => {
+  it("cadeia longa de $ref opcional para no terceiro nível", async () => {
+    const { bigSpec } = await import("../scripts/big-spec.js");
+    const big = bigSpec(50);
+    const ex = exampleFor(big, { $ref: "#/components/schemas/Resource9" }, "request");
+    let depth = 0;
+    for (let node = ex as { related?: unknown }; node?.related; node = node.related as never)
+      depth++;
+    expect(depth).toBe(2);
+  });
+});

@@ -1,12 +1,24 @@
 // Layout em 3 colunas: navegação | documentação | cliente. A operação aberta vive no hash
 // (#/op/<id>), o que dá deep link e o botão voltar do browser sem roteador.
 import { groupOperations, operationDetail, type SpecState } from "@core/openapi";
-import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { api, onSpecChange } from "./api";
-import { Client } from "./features/client/Client";
 import { Nav } from "./features/nav/Nav";
 import { Intro, OperationPage } from "./features/operation/Operation";
 import { useClient } from "./store";
+
+// O cliente traz o CodeMirror e o Ajv: só carrega quando a primeira operação abre.
+const Client = lazy(() => import("./features/client/Client").then((m) => ({ default: m.Client })));
+const loading = <p className="text-sm text-zinc-500">Carregando o cliente…</p>;
 
 const subscribeHash = (fn: () => void) => {
   window.addEventListener("hashchange", fn);
@@ -43,6 +55,15 @@ export function App() {
 
   const doc = state?.doc;
   const groups = useMemo(() => (doc ? groupOperations(doc) : []), [doc]);
+  // Meta da V1: spec de 2 mil operações pronta em menos de 1s. A marca mede isso no DevTools
+  // (Performance) e em performance.getEntriesByName("sworn:pronto").
+  const hasDoc = doc !== undefined;
+  useEffect(() => {
+    if (!hasDoc || performance.getEntriesByName("sworn:pronto").length) return;
+    performance.mark("sworn:pronto");
+    // Página pronta: baixa o cliente em segundo plano para o primeiro clique não esperar a rede.
+    import("./features/client/Client");
+  }, [hasDoc]);
   const selectedId = hash.startsWith("#/op/") ? decodeURIComponent(hash.slice(5)) : undefined;
   const op = useMemo(
     () => groups.flatMap(([, ops]) => ops).find((o) => o.id === selectedId),
@@ -91,7 +112,9 @@ export function App() {
           {/* Em telas estreitas o cliente desce para baixo da documentação. */}
           {doc && op && detail && !isWide && (
             <div className="mt-10">
-              <Client key={op.id} doc={doc} op={op} detail={detail} />
+              <Suspense fallback={loading}>
+                <Client key={op.id} doc={doc} op={op} detail={detail} />
+              </Suspense>
             </div>
           )}
         </div>
@@ -100,7 +123,9 @@ export function App() {
       <aside className="hidden overflow-y-auto border-zinc-200 border-l bg-zinc-50 lg:block dark:border-zinc-800 dark:bg-zinc-900">
         {doc && op && detail && isWide && (
           <div className="px-6 py-6">
-            <Client key={op.id} doc={doc} op={op} detail={detail} />
+            <Suspense fallback={loading}>
+              <Client key={op.id} doc={doc} op={op} detail={detail} />
+            </Suspense>
           </div>
         )}
       </aside>

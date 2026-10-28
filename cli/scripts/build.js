@@ -10,12 +10,18 @@ rmSync(dist, { recursive: true, force: true });
 await build({
   entryPoints: [new URL("../src/main.ts", import.meta.url).pathname],
   outfile: `${dist}main.js`,
+  // Tudo num arquivo só, dependências inclusas: o pacote publicado não tem dependências, e o
+  // `npx sworn` baixa 1 pacote (~800 KB) em vez de instalar 75 (~29 MB, uns 20s).
   bundle: true,
-  // As dependências vêm do npm junto com o pacote; só o código do cli vai no bundle.
-  packages: "external",
+  minify: true,
   platform: "node",
   target: "node22",
   format: "esm",
-  banner: { js: "#!/usr/bin/env node" },
+  // Dependências CommonJS dentro de um bundle ESM ainda chamam require().
+  banner: {
+    js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+  },
 });
 cpSync(web, `${dist}web`, { recursive: true });
+// O npm publica o README da pasta do pacote; a fonte é o da raiz do repositório.
+cpSync(new URL("../../README.md", import.meta.url), new URL("../README.md", import.meta.url));

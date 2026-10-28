@@ -88,6 +88,9 @@ export function exampleFor(
       for (const [key, prop] of Object.entries(s.properties ?? {})) {
         const p = resolve<Schema>(doc, prop).value;
         if ((mode === "request" && p?.readOnly) || (mode === "response" && p?.writeOnly)) continue;
+        // Cadeias longas de $ref (A.related → B.related → ...) viram um body enorme: a partir do
+        // terceiro nível, só os campos obrigatórios, para o exemplo continuar válido.
+        if (chain.length > 2 && !s.required?.includes(key)) continue;
         const value = exampleFor(doc, prop, mode, key, chain);
         if (value !== undefined) out[key] = value;
       }

@@ -2,6 +2,15 @@
   "name": "sworn",
   "private": true,
   "version": "0.0.0",
+  "description": "Documentação OpenAPI local que confere cada resposta real contra a spec.",
+  "keywords": [
+    "openapi",
+    "swagger",
+    "api",
+    "documentation",
+    "contract",
+    "validation"
+  ],
   "type": "module",
   "bin": {
     "sworn": "dist/main.js"
@@ -16,21 +25,20 @@
     "dev": "tsx watch src/main.ts",
     "build": "node scripts/build.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@apidevtools/json-schema-ref-parser": "^16.0.5",
-    "@fastify/static": "^10.1.8",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1",
-    "fastify": "^5.12.7",
-    "undici": "^8.12.3"
+    "typecheck": "tsc --noEmit",
+    "prepack": "cd .. && npm run build"
   },
   "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^16.0.5",
+    "@fastify/static": "^10.1.8",
     "@types/node": "^22.20.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "esbuild": "^0.28.2",
+    "fastify": "^5.12.7",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
+    "undici": "^8.12.3",
     "vitest": "^5.0.4"
   }
 }

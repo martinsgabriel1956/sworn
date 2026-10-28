@@ -13,6 +13,8 @@ export default defineConfig({
     alias: { "@core": new URL("../cli/src/core", import.meta.url).pathname },
   },
   clearScreen: false,
+  // O chunk do cliente (CodeMirror + Ajv) passa de 500 KB sem gzip; com gzip são ~165 KB.
+  build: { chunkSizeWarningLimit: 600 },
   server: {
     port: 5173,
     strictPort: true,
