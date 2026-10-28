@@ -1,13 +1,15 @@
-// CodeMirror 6 enxuto: JSON com realce e erro de sintaxe, sem o basicSetup inteiro.
-// A validação do body contra o schema chega com o validador da etapa 4.
+// CodeMirror 6 enxuto: JSON com realce, erro de sintaxe e os issues do validador marcados
+// no lugar certo do texto. Sem o basicSetup inteiro.
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { bracketMatching, HighlightStyle, syntaxHighlighting } from "@codemirror/language";
-import { linter } from "@codemirror/lint";
+import { type Diagnostic, linter, lintGutter } from "@codemirror/lint";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import type { Issue } from "@core/validate";
 import { tags as t } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
+import { pointerRange } from "./jsonPointer";
 
 // Classes do Tailwind em vez de cores fixas: o realce acompanha o dark mode.
 const highlight = HighlightStyle.define([
@@ -28,9 +30,6 @@ const theme = EditorView.theme({
   ".cm-line": { padding: "0 10px" },
 });
 
-// Body vazio é válido (sem body); o linter do JSON reclamaria.
-const jsonLint = linter((view) => (view.state.doc.length ? jsonParseLinter()(view) : []));
-
 export function Editor({
   value,
   onChange,
@@ -39,6 +38,7 @@ export function Editor({
   readOnly = false,
   placeholder,
   label,
+  issues,
 }: {
   value: string;
   onChange?: (value: string) => void;
@@ -48,12 +48,14 @@ export function Editor({
   readOnly?: boolean;
   placeholder?: string;
   label: string;
+  /** Issues do validador para o texto atual; viram marcações pelo `path` de cada um. */
+  issues?: (text: string) => Issue[];
 }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView>(undefined);
   // Callbacks mudam a cada render; o editor lê sempre a versão atual sem ser recriado.
-  const callbacks = useRef({ onChange, onSubmit });
-  callbacks.current = { onChange, onSubmit };
+  const callbacks = useRef({ onChange, onSubmit, issues });
+  callbacks.current = { onChange, onSubmit, issues };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: o valor inicial entra aqui; as mudanças, no efeito de baixo
   useEffect(() => {
@@ -79,7 +81,26 @@ export function Editor({
         if (u.docChanged) callbacks.current.onChange?.(u.state.doc.toString());
       }),
     ];
-    if (isJson) extensions.push(json(), jsonLint);
+    if (isJson) {
+      const lint = linter(
+        (v) => {
+          const text = v.state.doc.toString();
+          if (text === "") return []; // body vazio é válido: sem body
+          const syntax = jsonParseLinter()(v);
+          if (syntax.length > 0) return syntax; // JSON quebrado: o erro de sintaxe basta
+          const out: Diagnostic[] = [];
+          for (const issue of callbacks.current.issues?.(text) ?? []) {
+            // Issue sem caminho (status, content-type) aparece na lista, não no texto.
+            if (issue.path === "" && issue.kind !== "schema") continue;
+            const range = pointerRange(v.state, issue.path);
+            if (range) out.push({ ...range, severity: issue.level, message: issue.message });
+          }
+          return out;
+        },
+        { delay: 300 },
+      );
+      extensions.push(json(), lint, lintGutter());
+    }
     if (readOnly) extensions.push(EditorState.readOnly.of(true), EditorView.editable.of(false));
     if (placeholder) extensions.push(placeholderExt(placeholder));
     const v = new EditorView({

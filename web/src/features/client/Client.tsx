@@ -11,6 +11,7 @@ import {
   type SendResponse,
 } from "@core/request";
 import { type Schema, typeLabel } from "@core/schema";
+import { type Issue, validatorFor } from "@core/validate";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { activeVars, type Result, useClient } from "../../store";
 import { Button, inputClass, Method, statusColor, Tabs } from "../../ui";
@@ -172,6 +173,7 @@ export function Client({
             placeholder={types.length ? `Body em ${contentType}` : undefined}
             onChange={(body) => setDraft(op.id, { ...draft, body })}
             onSubmit={submit}
+            issues={(text) => validatorFor(doc).requestBody(op, contentType, text)}
           />
         </div>
       )}
@@ -181,7 +183,7 @@ export function Client({
         {sending ? (
           <p className="text-zinc-500">Enviando…</p>
         ) : result ? (
-          <ResultView result={result} />
+          <ResultView doc={doc} op={op} result={result} />
         ) : (
           <>
             <p className="mb-2 text-xs text-zinc-500">
@@ -252,10 +254,18 @@ function pretty(res: SendResponse) {
   }
 }
 
-function ResultView({ result }: { result: Result }) {
+function ResultView({ doc, op, result }: { doc: OpenApiDoc; op: Operation; result: Result }) {
   const [tab, setTab] = useState("body");
   const res = result.response;
   const body = useMemo(() => (res ? pretty(res) : ""), [res]);
+  // A tese do Sworn: toda resposta real é conferida contra a spec, sem ninguém pedir.
+  const issues = useMemo(
+    () =>
+      res
+        ? validatorFor(doc).response(op, res.status, res.headers, res.isBinary ? "" : res.body)
+        : [],
+    [doc, op, res],
+  );
 
   if (!res) {
     return (
@@ -276,6 +286,7 @@ function ResultView({ result }: { result: Result }) {
         <span className="text-zinc-500">{res.timeMs} ms</span>
         <span className="text-zinc-500">{bytes(res.sizeBytes)}</span>
       </p>
+      <Conformance issues={issues} />
       <Tabs
         items={[
           { key: "body", label: "Body" },
@@ -306,7 +317,13 @@ function ResultView({ result }: { result: Result }) {
                 Resposta maior que 5 MB: mostrando só o começo.
               </p>
             )}
-            <Editor label="Body da resposta" value={body} isJson={isJson} readOnly />
+            <Editor
+              label="Body da resposta"
+              value={body}
+              isJson={isJson}
+              readOnly
+              issues={() => issues}
+            />
           </>
         )}
       </div>
@@ -346,5 +363,38 @@ function OpHistory({ opId }: { opId: string }) {
         ))}
       </ul>
     </details>
+  );
+}
+
+/** Resultado da conferência com a spec: selo discreto quando bate, lista quando não bate. */
+function Conformance({ issues }: { issues: Issue[] }) {
+  if (issues.length === 0) {
+    return <p className="mb-3 text-emerald-700 text-xs dark:text-emerald-400">✓ Conforme a spec</p>;
+  }
+  const errors = issues.filter((i) => i.level === "error").length;
+  const warnings = issues.length - errors;
+  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const summary = [
+    errors > 0 && count(errors, "erro", "erros"),
+    warnings > 0 && count(warnings, "aviso", "avisos"),
+  ]
+    .filter(Boolean)
+    .join(" e ");
+  const tone =
+    errors > 0
+      ? "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200"
+      : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200";
+  return (
+    <div className={`mb-3 rounded-md border px-3 py-2 text-xs ${tone}`}>
+      <p className="font-semibold">A resposta diverge da spec: {summary}</p>
+      <ul className="mt-1 space-y-0.5">
+        {issues.map((i) => (
+          <li key={`${i.level}${i.path}${i.message}`}>
+            <span className="font-semibold">{i.level === "error" ? "erro" : "aviso"}</span>{" "}
+            {i.path && <code className="font-mono">{i.path}</code>} {i.message}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

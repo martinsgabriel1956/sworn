@@ -151,11 +151,15 @@ type Issue = {
 | `Content-Type` fora dos documentados                        | error   |
 | Campo presente na resposta e ausente no schema              | warning |
 
-**Campo não documentado:** o schema da maioria das specs não declara `additionalProperties`, então o Ajv aceita campo extra calado. A validação roda duas vezes: uma com o schema original (gera os errors) e outra com uma cópia que recebe `unevaluatedProperties: false` nos objetos que não declaram `additionalProperties` (os erros dessa passada viram warnings).
+**Como o Ajv enxerga a spec:** o documento inteiro entra no Ajv como um schema só (`addSchema(doc, "doc")`), e cada validação compila o trecho pelo ponteiro (`doc#/paths/~1pets/get/responses/200/content/application~1json/schema`). Os `$ref` internos e a recursão funcionam sem reescrever nada. Specs 3.0 passam antes por um conversor próprio (`from30`: `nullable` e `exclusiveMinimum/Maximum` booleanos).
 
-Os validadores compilados ficam em cache por operação e status, e o cache é invalidado no reload da spec.
+**Campo não documentado:** o schema da maioria das specs não declara `additionalProperties`, então o Ajv aceita campo extra calado. A ideia inicial (`unevaluatedProperties: false` numa cópia do schema) quebra a herança por `allOf` com `$ref`: o mesmo schema `NewPet` usado dentro de `Pet` passaria a recusar o `id` do outro membro. Por isso é um passeio próprio pelo dado junto com o schema, que entende `allOf`, discriminator e `$ref`. Sem discriminator, um `oneOf` aceita a união dos campos das variantes (menos falso positivo).
 
-Na UI, as issues aparecem de duas formas: como marcação nas linhas do body da resposta (decoração do CodeMirror, pelo `path`) e como uma lista acima do body. Uma resposta sem issues mostra um selo discreto de "conforme a spec".
+**oneOf/anyOf:** o Ajv reporta o erro de cada ramo, quase sempre ruído. Com discriminator, o Sworn valida só contra o ramo escolhido (erros precisos) ou aponta o valor que não casa com nenhum. "X ou null" (nullable) mostra os erros de X. Sem discriminator, fica uma mensagem só.
+
+Os trechos compilados ficam em cache dentro de um validador por versão da spec (`WeakMap` pelo documento): a recarga troca o documento e o cache vai junto.
+
+Na UI, as issues aparecem de duas formas: como marcação no body (linter do CodeMirror, com o `path` convertido em trecho pela árvore de sintaxe do JSON) e como uma lista acima do body. Uma resposta sem issues mostra um selo discreto de "Conforme a spec". O body da request é validado do mesmo jeito enquanto se digita.
 
 A `Issue` já é o formato que o relatório de drift da V2 vai acumular: na V2 basta gravar a lista no histórico.
 
