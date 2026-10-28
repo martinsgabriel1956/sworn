@@ -3,6 +3,7 @@ import { bodyExample } from "./examples.js";
 import { interpolate, type Vars } from "./interpolate.js";
 import type { OpenApiDoc, OperationDetail, Parameter, SecurityScheme } from "./openapi.js";
 import { resolve } from "./refs.js";
+import type { Issue } from "./validate.js";
 
 export type Auth =
   | { type: "none" }
@@ -54,7 +55,15 @@ export type HistoryEntry = {
   method: string;
   path: string;
   draft: Draft;
-  outcome: { status: number; timeMs: number; sizeBytes: number } | { error: string };
+  outcome:
+    | {
+        status: number;
+        timeMs: number;
+        sizeBytes: number;
+        /** Conferência com a spec (compactIssues). Ausente nas entradas de antes do drift. */
+        issues?: Issue[];
+      }
+    | { error: string };
 };
 
 export const paramKey = (p: Pick<Parameter, "in" | "name">) => `${p.in}:${p.name}`;

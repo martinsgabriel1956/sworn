@@ -22,6 +22,7 @@ Requer Node 22 ou mais novo. Aceita OpenAPI 3.0 e 3.1.
 ## O que tem
 
 - **Validação da resposta** contra o schema, com mensagens em português e marcações no body. O body da request também é validado enquanto você digita.
+- **Drift acumulado** (`#/drift`): onde as respostas reais divergiram da spec nas últimas 500 requests, por operação e campo, exportável em Markdown.
 - **Cliente embutido**: formulário de parâmetros, editor de body, auth global (Bearer, Basic, API key) e histórico por operação.
 - **Sem CORS e sem servidor de terceiros**: as requests passam por um proxy que roda na sua máquina.
 - **Ambientes versionáveis**: variáveis em arquivo no repositório, segredos fora do git.
@@ -52,7 +53,7 @@ Ficam ao lado da spec e só são criados no primeiro save.
   local/              # só nesta máquina
     secrets.json      # segredos por ambiente
     state.json        # ambiente ativo e auth
-    history.jsonl     # últimas 500 requests
+    history.jsonl     # últimas 500 requests, com a conferência de cada uma (drift)
 ```
 
 Use `{{nome}}` em parâmetros, body e auth. A variável `baseUrl` substitui o server da spec. O histórico guarda a request antes de trocar as variáveis, então nenhum segredo vai para o arquivo.

@@ -78,7 +78,10 @@ export function Client({
   );
 
   const submit = () => {
-    if (!sending) send({ opId: op.id, method: op.method, path: op.path, draft }, request);
+    if (!sending)
+      send({ opId: op.id, method: op.method, path: op.path, draft }, request, (res) =>
+        checkResponse(doc, op, res),
+      );
   };
   // Ctrl/Cmd+Enter em qualquer campo. O editor trata o próprio atalho e marca defaultPrevented.
   const onKeyDown = (e: KeyboardEvent) => {
@@ -271,18 +274,15 @@ function pretty(res: SendResponse) {
   }
 }
 
+// A tese do Sworn: toda resposta real é conferida contra a spec, sem ninguém pedir.
+const checkResponse = (doc: OpenApiDoc, op: Operation, res: SendResponse) =>
+  validatorFor(doc).response(op, res.status, res.headers, res.isBinary ? "" : res.body);
+
 function ResultView({ doc, op, result }: { doc: OpenApiDoc; op: Operation; result: Result }) {
   const [tab, setTab] = useState("body");
   const res = result.response;
   const body = useMemo(() => (res ? pretty(res) : ""), [res]);
-  // A tese do Sworn: toda resposta real é conferida contra a spec, sem ninguém pedir.
-  const issues = useMemo(
-    () =>
-      res
-        ? validatorFor(doc).response(op, res.status, res.headers, res.isBinary ? "" : res.body)
-        : [],
-    [doc, op, res],
-  );
+  const issues = useMemo(() => (res ? checkResponse(doc, op, res) : []), [doc, op, res]);
 
   if (!res) {
     return (

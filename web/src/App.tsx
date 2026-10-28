@@ -1,5 +1,5 @@
 // Layout em 3 colunas: navegação | documentação | cliente. A operação aberta vive no hash
-// (#/op/<id>), o que dá deep link e o botão voltar do browser sem roteador.
+// (#/op/<id>, ou #/drift), o que dá deep link e o botão voltar do browser sem roteador.
 import { groupOperations, operationDetail, type SpecState } from "@core/openapi";
 import {
   lazy,
@@ -12,6 +12,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { api, onSpecChange } from "./api";
+import { DriftPage } from "./features/drift/Drift";
 import { Nav } from "./features/nav/Nav";
 import { Intro, OperationPage } from "./features/operation/Operation";
 import { useClient } from "./store";
@@ -65,6 +66,7 @@ export function App() {
     import("./features/client/Client");
   }, [hasDoc]);
   const selectedId = hash.startsWith("#/op/") ? decodeURIComponent(hash.slice(5)) : undefined;
+  const isDrift = hash === "#/drift";
   const op = useMemo(
     () => groups.flatMap(([, ops]) => ops).find((o) => o.id === selectedId),
     [groups, selectedId],
@@ -98,7 +100,10 @@ export function App() {
       <main ref={mainRef} className="overflow-y-auto">
         <div className="mx-auto max-w-3xl px-8 py-8">
           {banners}
-          {doc && !selectedId && state && <Intro doc={doc} state={state} groups={groups} />}
+          {doc && isDrift && <DriftPage doc={doc} />}
+          {doc && !selectedId && !isDrift && state && (
+            <Intro doc={doc} state={state} groups={groups} />
+          )}
           {doc && op && detail && <OperationPage doc={doc} op={op} detail={detail} />}
           {doc && selectedId && !op && (
             <p className="text-zinc-500">

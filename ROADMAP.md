@@ -43,7 +43,7 @@ Formato: CLI (`npx @sworn/cli openapi.yaml`) que sobe um servidor local com a UI
 
 | Funcionalidade                                                                                                                              | Tipo       |
 | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Relatório de drift acumulado**: junta as validações do uso diário ("`GET /users` divergiu 12 vezes, campo `email` veio `null`") e exporta | ⭐         |
+| ✅ **Relatório de drift acumulado**: junta as validações do uso diário ("`GET /users` divergiu 12 vezes, campo `email` veio `null`") e exporta | ⭐         |
 | **Changelog na doc**: compara com um ref do git (`--since main`) e marca endpoints como novo, alterado ou breaking                          | ⭐         |
 | OAuth2 (Authorization Code + PKCE, Client Credentials)                                                                                      | 🔧 Swagger |
 | **Middlewares zero-config** (Express, Fastify, NestJS, FastAPI), com o proxy como rota do próprio app                                       | 🟢 Swagger |

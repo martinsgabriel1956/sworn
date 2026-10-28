@@ -1,8 +1,11 @@
 // Sidebar virtualizada: só as linhas visíveis vão para o DOM, então specs com milhares
 // de operações rolam sem travar.
+
+import { driftReport } from "@core/drift";
 import type { OpenApiDoc, Operation } from "@core/openapi";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef } from "react";
+import { useClient } from "../../store";
 import { Method } from "../../ui";
 import { Search } from "../search/Search";
 
@@ -28,6 +31,8 @@ export function Nav({
     [groups],
   );
   const ops = useMemo(() => groups.flatMap(([, list]) => list), [groups]);
+  const history = useClient((s) => s.history);
+  const drifting = useMemo(() => driftReport(history).ops.length, [history]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -51,6 +56,18 @@ export function Nav({
         {doc?.info?.version && <span className="text-xs text-zinc-500">v{doc.info.version}</span>}
       </a>
       <Search doc={doc} ops={ops} />
+      <a
+        href="#/drift"
+        aria-current={location.hash === "#/drift" ? "page" : undefined}
+        className="mx-2 mt-2 flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-zinc-200/60 aria-[current=page]:bg-zinc-200 dark:aria-[current=page]:bg-zinc-800 dark:hover:bg-zinc-800/60"
+      >
+        Drift
+        {drifting > 0 && (
+          <span className="ml-auto rounded bg-rose-50 px-1.5 text-[11px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+            {drifting}
+          </span>
+        )}
+      </a>
 
       <nav ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto py-2" aria-label="Operações">
         <ul className="relative" style={{ height: virtualizer.getTotalSize() }}>
